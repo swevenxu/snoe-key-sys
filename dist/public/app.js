@@ -1,7 +1,7 @@
 // Configuration - UPDATE THESE WITH YOUR ACTUAL LINKS
 const CONFIG = {
   // Replace with your actual ad links
-  linkvertise: 'https://linkvertise.com/YOUR_ID/your-link',
+  linkvertise: 'https://direct-link.net/2630173/UbIbGR9F9wX7',
   lootlabs: 'https://loot-link.com/s?V6BuGpvN',
   workink: 'https://work.ink/2cCC/snoe-keys',
   
