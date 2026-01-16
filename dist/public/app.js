@@ -315,5 +315,8 @@ function checkPendingCheckpoint() {
 }
 
 // Initialize on load
-initSession();
-checkPendingCheckpoint();
+async function init() {
+  await initSession();
+  checkPendingCheckpoint();
+}
+init();
