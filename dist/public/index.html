@@ -381,7 +381,12 @@
         // Append session token for postback verification
         const separator = adUrl.includes('?') ? '&' : '?';
         adUrl = `${adUrl}${separator}uid=${sessionToken}`;
-        window.open(adUrl, '_blank');
+        
+        // Use location.href as fallback if popup blocked
+        const newWindow = window.open(adUrl, '_blank');
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          window.location.href = adUrl;
+        }
         
         // Start polling to check if postback was received
         showStatus('Complete the checkpoint, then come back here...', 'success');
