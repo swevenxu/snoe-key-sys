@@ -294,20 +294,17 @@ function checkPendingCheckpoint() {
         console.log('Found pending checkpoint:', data);
         localStorage.removeItem('pending_checkpoint');
         
-        // Mark as completed immediately
-        completedProviders.add(data.provider.toLowerCase());
+        // Wait for session to be ready, then verify with server
+        const waitForSession = setInterval(() => {
+          if (sessionToken) {
+            clearInterval(waitForSession);
+            // Tell the server this checkpoint is complete
+            verifyCheckpoint(data.provider);
+          }
+        }, 200);
         
-        // Update button
-        const btn = document.querySelector(`.checkpoint-btn.${data.provider}`);
-        if (btn) {
-          btn.classList.add('done');
-          btn.innerHTML = 'Completed';
-          btn.disabled = true;
-        }
-        
-        // Update UI
-        updateUI();
-        showStatus(`${data.provider} completed!`, 'success');
+        // Timeout after 5 seconds
+        setTimeout(() => clearInterval(waitForSession), 5000);
       } else {
         localStorage.removeItem('pending_checkpoint');
       }
