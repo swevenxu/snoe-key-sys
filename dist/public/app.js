@@ -32,6 +32,22 @@ function generateVisitorId() {
 
 // Initialize session on page load
 async function initSession() {
+  // Check if we have an existing session
+  const existingSession = localStorage.getItem('checkpoint_session');
+  if (existingSession) {
+    try {
+      const data = JSON.parse(existingSession);
+      // Use existing session if it's less than 30 minutes old
+      if (Date.now() - data.timestamp < 30 * 60 * 1000) {
+        sessionToken = data.token;
+        console.log('Restored session:', sessionToken);
+        return;
+      }
+    } catch (e) {
+      // Invalid data, create new session
+    }
+  }
+  
   try {
     const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/start`, {
       method: 'POST',
@@ -45,6 +61,11 @@ async function initSession() {
     const data = await response.json();
     if (data.success) {
       sessionToken = data.token;
+      // Save session to localStorage
+      localStorage.setItem('checkpoint_session', JSON.stringify({
+        token: sessionToken,
+        timestamp: Date.now()
+      }));
       console.log('Session started:', sessionToken);
     }
   } catch (error) {
@@ -275,13 +296,16 @@ function checkPendingCheckpoint() {
         const checkSession = setInterval(() => {
           if (sessionToken) {
             clearInterval(checkSession);
-            // If same session, mark as complete
-            if (sessionToken === data.token) {
-              verifyCheckpoint(data.provider);
-            }
+            console.log('Session ready, verifying checkpoint...');
+            verifyCheckpoint(data.provider);
             localStorage.removeItem('pending_checkpoint');
           }
         }, 500);
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          localStorage.removeItem('pending_checkpoint');
+        }, 10000);
       } else {
         localStorage.removeItem('pending_checkpoint');
       }
