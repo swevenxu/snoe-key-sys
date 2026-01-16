@@ -370,6 +370,9 @@
     
     // Start a checkpoint
     function startCheckpoint(provider) {
+      console.log('startCheckpoint called:', provider);
+      console.log('sessionToken:', sessionToken);
+      
       if (!sessionToken) {
         showStatus('Session not ready. Please wait...', 'error');
         return;
@@ -377,14 +380,20 @@
       
       // Open ad link in new tab with session token
       let adUrl = CONFIG[provider];
+      console.log('adUrl:', adUrl);
+      
       if (adUrl && !adUrl.includes('YOUR_')) {
         // Append session token for postback verification
         const separator = adUrl.includes('?') ? '&' : '?';
         adUrl = `${adUrl}${separator}uid=${sessionToken}`;
+        console.log('Final URL:', adUrl);
         
         // Use location.href as fallback if popup blocked
         const newWindow = window.open(adUrl, '_blank');
+        console.log('newWindow:', newWindow);
+        
         if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.log('Popup blocked, redirecting...');
           window.location.href = adUrl;
         }
         
