@@ -84,6 +84,11 @@ app.get('/getkey', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
+// Serve admin dashboard
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(publicPath, 'admin.html'));
+});
+
 // Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
