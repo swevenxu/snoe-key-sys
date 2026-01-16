@@ -334,9 +334,50 @@ function checkPendingCheckpoint() {
   }
 }
 
+// Check for Linkvertise hash in URL (anti-bypass verification)
+async function checkLinkvertiseHash() {
+  const params = new URLSearchParams(window.location.search);
+  const hash = params.get('hash');
+  
+  if (hash && sessionToken) {
+    console.log('Found Linkvertise hash, verifying...');
+    
+    try {
+      const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/verify-linkvertise`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hash, token: sessionToken }),
+      });
+      
+      const data = await response.json();
+      console.log('Linkvertise verify response:', data);
+      
+      if (data.success) {
+        completedProviders.add('linkvertise');
+        
+        const btn = document.querySelector('.checkpoint-btn.linkvertise');
+        if (btn) {
+          btn.classList.add('done');
+          btn.innerHTML = 'Completed';
+          btn.disabled = true;
+        }
+        
+        updateUI();
+        showStatus('Linkvertise completed!', 'success');
+        
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch (error) {
+      console.error('Linkvertise verification failed:', error);
+    }
+  }
+}
+
 // Initialize on load
 async function init() {
   await initSession();
+  await checkLinkvertiseHash();
   checkPendingCheckpoint();
 }
 init();

@@ -110,6 +110,40 @@ router.get('/complete/lootlabs', (req, res) => {
     res.redirect('/getkey');
 });
 /**
+ * POST /api/checkpoint/verify-linkvertise
+ * Verify Linkvertise hash using their anti-bypass API
+ */
+router.post('/verify-linkvertise', async (req, res) => {
+    const { hash, token } = req.body;
+    if (!hash || !token) {
+        res.status(400).json({ error: 'hash and token are required' });
+        return;
+    }
+    const LINKVERTISE_TOKEN = '75548935d867a96b626e7414463a3b22046ff96697698d008c34bbd3b68e2b4b';
+    try {
+        // Verify with Linkvertise API
+        const response = await fetch(`https://publisher.linkvertise.com/api/v1/redirect/link/static?token=${LINKVERTISE_TOKEN}&hash=${hash}`);
+        const data = await response.json();
+        console.log('[Linkvertise Verify] Response:', data);
+        if (data.success || data.valid) {
+            // Hash is valid - user completed Linkvertise
+            const checkpoint = pendingCheckpoints.get(token);
+            if (checkpoint) {
+                checkpoint.completedProviders.add('linkvertise');
+                console.log(`[Linkvertise] Verified completion for token: ${token}`);
+            }
+            res.json({ success: true, message: 'Linkvertise completed' });
+        }
+        else {
+            res.json({ success: false, message: 'Invalid hash - checkpoint not completed' });
+        }
+    }
+    catch (error) {
+        console.error('[Linkvertise Verify] Error:', error);
+        res.status(500).json({ error: 'Failed to verify with Linkvertise' });
+    }
+});
+/**
  * GET /api/checkpoint/status/:token
  * Check the status of a checkpoint session
  */
