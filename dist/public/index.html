@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Your Key</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+    
+    .subtitle {
+      color: rgba(255, 255, 255, 0.6);
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 0.95em;
+    }
+    
+    .step {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+    
+    .step.completed {
+      border-color: #00d67d;
+      background: rgba(0, 214, 125, 0.1);
+    }
+    
+    .step.active {
+      border-color: #4a9eff;
+      background: rgba(74, 158, 255, 0.1);
+    }
+    
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .step-number {
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+    
+    .step.completed .step-number {
+      background: #00d67d;
+    }
+    
+    .step-title {
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+    
+    .checkpoint-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .checkpoint-btn {
+      padding: 14px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .checkpoint-btn.linkvertise {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    
+    .checkpoint-btn.lootlabs {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: #fff;
+    }
+    
+    .checkpoint-btn.workink {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: #fff;
+    }
+    
+    .checkpoint-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .checkpoint-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .checkpoint-btn.done {
+      background: #00d67d !important;
+    }
+    
+    .claim-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #00d67d 0%, #00b894 100%);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.1em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+    
+    .claim-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 214, 125, 0.3);
+    }
+    
+    .claim-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #666;
+    }
+    
+    .key-display {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .key-display.show {
+      display: block;
+    }
+    
+    .key-label {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.9em;
+      margin-bottom: 10px;
+    }
+    
+    .key-value {
+      color: #00d67d;
+      font-size: 1.4em;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      word-break: break-all;
+      cursor: pointer;
+      padding: 10px;
+      background: rgba(0, 214, 125, 0.1);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .key-value:hover {
+      background: rgba(0, 214, 125, 0.2);
+    }
+    
+    .copy-hint {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 0.8em;
+      margin-top: 10px;
+    }
+    
+    .expires-info {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.85em;
+      margin-top: 15px;
+    }
+    
+    .status-message {
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 15px;
+      font-size: 0.9em;
+      display: none;
+    }
+    
+    .status-message.error {
+      display: block;
+      background: rgba(255, 71, 87, 0.2);
+      color: #ff4757;
+    }
+    
+    .status-message.success {
+      display: block;
+      background: rgba(0, 214, 125, 0.2);
+      color: #00d67d;
+    }
+    
+    .progress-text {
+      color: rgba(255, 255, 255, 0.5);
+      text-align: center;
+      font-size: 0.85em;
+      margin-top: 10px;
+    }
+
+    .loader {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔑 Get Your Key</h1>
+    <p class="subtitle">Complete 1 checkpoint to receive your access key</p>
+    
+    <div class="step active" id="step1">
+      <div class="step-header">
+        <div class="step-number">1</div>
+        <div class="step-title">Complete a Checkpoint</div>
+      </div>
+      <div class="checkpoint-buttons">
+        <button class="checkpoint-btn linkvertise" onclick="startCheckpoint('linkvertise')">
+          <span>Linkvertise</span>
+        </button>
+        <button class="checkpoint-btn lootlabs" onclick="startCheckpoint('lootlabs')">
+          <span>Lootlabs</span>
+        </button>
+        <button class="checkpoint-btn workink" onclick="startCheckpoint('workink')">
+          <span>Work.ink</span>
+        </button>
+      </div>
+      <p class="progress-text">Completed: <span id="completedCount">0</span>/1</p>
+    </div>
+    
+    <div class="step" id="step2">
+      <div class="step-header">
+        <div class="step-number">2</div>
+        <div class="step-title">Claim Your Key</div>
+      </div>
+      <button class="claim-btn" id="claimBtn" onclick="claimKey()" disabled>
+        <span id="claimText">Complete Checkpoint First</span>
+        <div class="loader" id="claimLoader"></div>
+      </button>
+    </div>
+    
+    <div class="key-display" id="keyDisplay">
+      <div class="key-label">Your License Key:</div>
+      <div class="key-value" id="keyValue" onclick="copyKey()"></div>
+      <div class="copy-hint">Click to copy</div>
+      <div class="expires-info" id="expiresInfo"></div>
+    </div>
+    
+    <div class="status-message" id="statusMessage"></div>
+  </div>
+
+  <script>
+    // Configuration - UPDATE THESE WITH YOUR ACTUAL LINKS
+    const CONFIG = {
+      // Replace with your actual ad links
+      linkvertise: 'https://linkvertise.com/YOUR_ID/your-link',
+      lootlabs: 'https://lootlabs.gg/YOUR_LINK',
+      workink: 'https://work.ink/YOUR_LINK',
+      
+      // API base URL (empty = same domain)
+      apiUrl: '',
+      
+      // Required checkpoints (match with server config)
+      requiredCheckpoints: 1,
+    };
+    
+    let sessionToken = null;
+    let completedProviders = new Set();
+    let hwid = null;
+    
+    // Get HWID from URL params (passed from Lua script)
+    const urlParams = new URLSearchParams(window.location.search);
+    hwid = urlParams.get('hwid') || generateVisitorId();
+    
+    // Generate a unique visitor ID
+    function generateVisitorId() {
+      let id = localStorage.getItem('visitor_id');
+      if (!id) {
+        id = 'web_' + Math.random().toString(36).substr(2, 16);
+        localStorage.setItem('visitor_id', id);
+      }
+      return id;
+    }
+    
+    // Initialize session on page load
+    async function initSession() {
+      try {
+        const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            visitorId: generateVisitorId(),
+            hwid: hwid,
+          }),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          sessionToken = data.token;
+          console.log('Session started:', sessionToken);
+        }
+      } catch (error) {
+        console.error('Failed to start session:', error);
+        showStatus('Failed to initialize. Please refresh the page.', 'error');
+      }
+    }
+    
+    // Start a checkpoint
+    function startCheckpoint(provider) {
+      if (!sessionToken) {
+        showStatus('Session not ready. Please wait...', 'error');
+        return;
+      }
+      
+      // Open ad link in new tab
+      const adUrl = CONFIG[provider];
+      if (adUrl && !adUrl.includes('YOUR_')) {
+        window.open(adUrl, '_blank');
+      } else {
+        // Demo mode - simulate completion
+        console.log('Demo mode: Simulating', provider, 'completion');
+      }
+      
+      // Show verification prompt after delay
+      setTimeout(() => {
+        verifyCheckpoint(provider);
+      }, 3000);
+    }
+    
+    // Verify checkpoint completion
+    async function verifyCheckpoint(provider) {
+      try {
+        const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: sessionToken,
+            provider: provider,
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          completedProviders = new Set(data.completedProviders);
+          updateUI();
+          showStatus(`${provider} checkpoint completed!`, 'success');
+          
+          // Mark button as done
+          const btn = document.querySelector(`.checkpoint-btn.${provider}`);
+          if (btn) {
+            btn.classList.add('done');
+            btn.innerHTML = '✓ Completed';
+            btn.disabled = true;
+          }
+        }
+      } catch (error) {
+        console.error('Verification failed:', error);
+        showStatus('Verification failed. Please try again.', 'error');
+      }
+    }
+    
+    // Update UI based on progress
+    function updateUI() {
+      const count = completedProviders.size;
+      document.getElementById('completedCount').textContent = count;
+      
+      const claimBtn = document.getElementById('claimBtn');
+      const claimText = document.getElementById('claimText');
+      
+      if (count >= CONFIG.requiredCheckpoints) {
+        claimBtn.disabled = false;
+        claimText.textContent = 'Claim Your Key';
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step1').classList.add('completed');
+        document.getElementById('step2').classList.add('active');
+      }
+    }
+    
+    // Claim the key
+    async function claimKey() {
+      const claimBtn = document.getElementById('claimBtn');
+      const claimText = document.getElementById('claimText');
+      const claimLoader = document.getElementById('claimLoader');
+      
+      claimBtn.disabled = true;
+      claimText.textContent = 'Claiming...';
+      claimLoader.style.display = 'inline-block';
+      
+      try {
+        const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/claim`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: sessionToken }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Show the key
+          document.getElementById('keyValue').textContent = data.key;
+          document.getElementById('expiresInfo').textContent = `Expires in: ${data.expiresIn}`;
+          document.getElementById('keyDisplay').classList.add('show');
+          
+          document.getElementById('step2').classList.remove('active');
+          document.getElementById('step2').classList.add('completed');
+          
+          claimText.textContent = 'Key Claimed!';
+          showStatus('Key generated successfully!', 'success');
+        } else {
+          throw new Error(data.error || 'Failed to claim key');
+        }
+      } catch (error) {
+        console.error('Claim failed:', error);
+        showStatus(error.message || 'Failed to claim key. Please try again.', 'error');
+        claimBtn.disabled = false;
+        claimText.textContent = 'Try Again';
+      }
+      
+      claimLoader.style.display = 'none';
+    }
+    
+    // Copy key to clipboard
+    function copyKey() {
+      const key = document.getElementById('keyValue').textContent;
+      navigator.clipboard.writeText(key).then(() => {
+        showStatus('Key copied to clipboard!', 'success');
+      });
+    }
+    
+    // Show status message
+    function showStatus(message, type) {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = message;
+      statusEl.className = 'status-message ' + type;
+      
+      setTimeout(() => {
+        statusEl.className = 'status-message';
+      }, 5000);
+    }
+    
+    // Initialize on load
+    initSession();
+  </script>
+</body>
+</html>

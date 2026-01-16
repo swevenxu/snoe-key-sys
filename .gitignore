@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output (not ignored - needed for Railway)
+# dist/
 
 # Environment variables
 .env
