@@ -18,8 +18,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Security middleware (disable CSP for static pages)
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 app.use(cors());
 
 // Body parsing
