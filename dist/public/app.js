@@ -292,20 +292,22 @@ function checkPendingCheckpoint() {
       // Check if it's recent (within 10 minutes)
       if (Date.now() - data.timestamp < 10 * 60 * 1000) {
         console.log('Found pending checkpoint:', data);
-        // Wait for session to be ready, then verify
-        const checkSession = setInterval(() => {
-          if (sessionToken) {
-            clearInterval(checkSession);
-            console.log('Session ready, verifying checkpoint...');
-            verifyCheckpoint(data.provider);
-            localStorage.removeItem('pending_checkpoint');
-          }
-        }, 500);
+        localStorage.removeItem('pending_checkpoint');
         
-        // Timeout after 10 seconds
-        setTimeout(() => {
-          localStorage.removeItem('pending_checkpoint');
-        }, 10000);
+        // Mark as completed immediately
+        completedProviders.add(data.provider.toLowerCase());
+        
+        // Update button
+        const btn = document.querySelector(`.checkpoint-btn.${data.provider}`);
+        if (btn) {
+          btn.classList.add('done');
+          btn.innerHTML = '✓ Completed';
+          btn.disabled = true;
+        }
+        
+        // Update UI
+        updateUI();
+        showStatus(`${data.provider} completed!`, 'success');
       } else {
         localStorage.removeItem('pending_checkpoint');
       }
