@@ -2,7 +2,7 @@
 const CONFIG = {
   // Replace with your actual ad links
   linkvertise: 'https://linkvertise.com/YOUR_ID/your-link',
-  lootlabs: 'https://loot-link.com/s?V6BuGpvN&data=GtehpAXHTS0iWWG%2Brwk6kzaLlmRNhEZyrd9xTqO%2BbKRVxkYRiLDZ7JD6DPyktLYdATMSO/82IPm3YdWK4Y0ScA%3D%3D',
+  lootlabs: 'https://loot-link.com/s?V6BuGpvN',
   workink: 'https://work.ink/YOUR_LINK',
   
   // API base URL (empty = same domain)
@@ -68,12 +68,9 @@ function startCheckpoint(provider) {
   console.log('adUrl:', adUrl);
   
   if (adUrl && !adUrl.includes('YOUR_')) {
-    // For lootlabs with anti-bypass, don't add extra params (breaks the data signature)
-    // For other providers, append session token
-    if (!adUrl.includes('loot-link.com') && !adUrl.includes('lootlabs.gg')) {
-      const separator = adUrl.includes('?') ? '&' : '?';
-      adUrl = `${adUrl}${separator}uid=${sessionToken}`;
-    }
+    // Append session token for postback verification
+    const separator = adUrl.includes('?') ? '&' : '?';
+    adUrl = `${adUrl}${separator}uid=${sessionToken}`;
     console.log('Final URL:', adUrl);
     
     // Use location.href as fallback if popup blocked
