@@ -286,31 +286,51 @@ function showStatus(message, type) {
 // Check for pending checkpoint on page load (user returned from ad)
 function checkPendingCheckpoint() {
   const pending = localStorage.getItem('pending_checkpoint');
+  console.log('Checking pending checkpoint:', pending);
+  console.log('Session token:', sessionToken);
+  
   if (pending) {
     try {
       const data = JSON.parse(pending);
+      console.log('Parsed pending data:', data);
+      console.log('Time diff:', Date.now() - data.timestamp);
+      
       // Check if it's recent (within 10 minutes)
       if (Date.now() - data.timestamp < 10 * 60 * 1000) {
-        console.log('Found pending checkpoint:', data);
+        console.log('Pending checkpoint is valid, verifying...');
         localStorage.removeItem('pending_checkpoint');
         
-        // Wait for session to be ready, then verify with server
-        const waitForSession = setInterval(() => {
-          if (sessionToken) {
+        // Tell the server this checkpoint is complete
+        if (sessionToken) {
+          console.log('Session ready, calling verifyCheckpoint');
+          verifyCheckpoint(data.provider);
+        } else {
+          console.log('Session not ready, waiting...');
+          // Wait for session to be ready
+          const waitForSession = setInterval(() => {
+            if (sessionToken) {
+              clearInterval(waitForSession);
+              console.log('Session now ready, calling verifyCheckpoint');
+              verifyCheckpoint(data.provider);
+            }
+          }, 200);
+          
+          // Timeout after 5 seconds
+          setTimeout(() => {
             clearInterval(waitForSession);
-            // Tell the server this checkpoint is complete
-            verifyCheckpoint(data.provider);
-          }
-        }, 200);
-        
-        // Timeout after 5 seconds
-        setTimeout(() => clearInterval(waitForSession), 5000);
+            console.log('Timeout waiting for session');
+          }, 5000);
+        }
       } else {
+        console.log('Pending checkpoint expired');
         localStorage.removeItem('pending_checkpoint');
       }
     } catch (e) {
+      console.error('Error parsing pending checkpoint:', e);
       localStorage.removeItem('pending_checkpoint');
     }
+  } else {
+    console.log('No pending checkpoint found');
   }
 }
 
