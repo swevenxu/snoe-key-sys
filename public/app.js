@@ -68,9 +68,12 @@ function startCheckpoint(provider) {
   console.log('adUrl:', adUrl);
   
   if (adUrl && !adUrl.includes('YOUR_')) {
-    // Append session token for postback verification
-    const separator = adUrl.includes('?') ? '&' : '?';
-    adUrl = `${adUrl}${separator}uid=${sessionToken}`;
+    // For lootlabs with anti-bypass, don't add extra params (breaks the data signature)
+    // For other providers, append session token
+    if (!adUrl.includes('loot-link.com') && !adUrl.includes('lootlabs.gg')) {
+      const separator = adUrl.includes('?') ? '&' : '?';
+      adUrl = `${adUrl}${separator}uid=${sessionToken}`;
+    }
     console.log('Final URL:', adUrl);
     
     // Use location.href as fallback if popup blocked
