@@ -274,15 +274,17 @@
     }
     
     .table-action {
-      padding: 6px 12px;
+      padding: 8px;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 6px;
       color: #fff;
       cursor: pointer;
-      font-size: 0.8em;
       margin-right: 5px;
       transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .table-action:hover {
@@ -291,6 +293,10 @@
     
     .table-action.revoke:hover {
       background: rgba(255, 71, 87, 0.2);
+    }
+    
+    .table-action svg {
+      display: block;
     }
     
     /* Modal */
