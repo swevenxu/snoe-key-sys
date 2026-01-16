@@ -68,8 +68,9 @@ app.get('/', (req, res) => {
   });
 });
 
-// Serve static files (checkpoint page)
-app.use(express.static(path.join(__dirname, '../public')));
+// Serve static files (checkpoint page) - check both possible locations
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
 // Routes
 app.use('/api/validate', validateRoutes);
@@ -78,7 +79,7 @@ app.use('/api/checkpoint', checkpointRoutes);
 
 // Serve the checkpoint page at /getkey
 app.get('/getkey', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // Error handling

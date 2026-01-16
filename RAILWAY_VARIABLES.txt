@@ -1,0 +1,19 @@
+Copy these exactly into Railway Variables:
+
+=== DATABASE_URL ===
+postgresql://neondb_owner:npg_Kk8rewUZ4TpV@ep-billowing-hill-ahddnhjj-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+=== ADMIN_API_KEY ===
+snoe-admin-key-2024-secure
+
+=== KEY_PREFIX ===
+SNOE
+
+=== REQUIRED_CHECKPOINTS ===
+1
+
+=== CHECKPOINT_KEY_DURATION ===
+1
+
+=== NODE_ENV ===
+production
