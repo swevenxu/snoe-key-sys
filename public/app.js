@@ -85,20 +85,19 @@ function startCheckpoint(provider) {
       window.location.href = adUrl;
     }
     
-    // Start polling to check if postback was received
-    showStatus('Complete the checkpoint, then come back here...', 'success');
+    // Start polling to check if postback was received from server
+    showStatus('Complete the ad tasks, then return here. It may take a moment to verify...', 'success');
     pollForCompletion(provider);
   } else {
-    // Demo mode - simulate completion
-    console.log('Demo mode: Simulating', provider, 'completion');
-    setTimeout(() => {
-      verifyCheckpoint(provider);
-    }, 3000);
+    // No link configured - show error
+    showStatus(`${provider} is not configured yet`, 'error');
   }
 }
 
 // Poll server to check if postback was received
 function pollForCompletion(provider) {
+  // Don't auto-complete - wait for user to click "I've completed" or for redirect back
+  // This is just a backup check
   let attempts = 0;
   const maxAttempts = 60; // 5 minutes max
   
@@ -128,9 +127,27 @@ function pollForCompletion(provider) {
     
     if (attempts >= maxAttempts) {
       clearInterval(interval);
-      showStatus('Timeout - please try again', 'error');
     }
   }, 5000); // Check every 5 seconds
+}
+
+// Check if user returned from ad completion (via redirect)
+function checkRedirectCompletion() {
+  const params = new URLSearchParams(window.location.search);
+  const completedProvider = params.get('completed');
+  
+  if (completedProvider) {
+    // User was redirected back after completing checkpoint
+    // Remove the param from URL
+    window.history.replaceState({}, '', window.location.pathname);
+    
+    // Mark as completed after session is ready
+    setTimeout(() => {
+      if (sessionToken) {
+        verifyCheckpoint(completedProvider);
+      }
+    }, 1000);
+  }
 }
 
 // Verify checkpoint completion
