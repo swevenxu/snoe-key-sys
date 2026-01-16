@@ -90,7 +90,7 @@ async function loadKeys() {
   }
 }
 
-// Format time remaining
+// Format time remaining as HH:MM:SS
 function formatTimeRemaining(expiresAt) {
   const now = new Date();
   const expires = new Date(expiresAt);
@@ -98,14 +98,25 @@ function formatTimeRemaining(expiresAt) {
   
   if (diff <= 0) return 'Expired';
   
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const totalSeconds = Math.floor(diff / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
   
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
+  const pad = (n) => n.toString().padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
+
+// Update countdowns every second
+setInterval(() => {
+  if (allKeys.length > 0) {
+    renderKeys(allKeys.filter(key => {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      return key.key.toLowerCase().includes(search) || 
+             (key.note && key.note.toLowerCase().includes(search));
+    }));
+  }
+}, 1000);
 
 // Render keys table
 function renderKeys(keys) {
