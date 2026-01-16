@@ -1,0 +1,44 @@
+# Docker Compose for local development
+# Run: docker-compose up -d
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: keysystem-db
+    environment:
+      POSTGRES_USER: keysystem
+      POSTGRES_PASSWORD: keysystem_password
+      POSTGRES_DB: keysystem
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keysystem"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Key System API (optional - can also run with npm run dev)
+  api:
+    build: .
+    container_name: keysystem-api
+    environment:
+      DATABASE_URL: postgresql://keysystem:keysystem_password@postgres:5432/keysystem
+      PORT: 3000
+      NODE_ENV: development
+      ADMIN_API_KEY: dev-admin-key-change-in-production
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    command: npm run dev
+
+volumes:
+  postgres_data:
