@@ -413,6 +413,96 @@
     .toast.error {
       background: rgba(255, 71, 87, 0.9);
     }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .dashboard {
+        padding: 15px;
+      }
+      
+      .header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+      
+      .header h1 {
+        font-size: 1.4em;
+      }
+      
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      
+      .stat-card {
+        padding: 16px;
+      }
+      
+      .stat-card .value {
+        font-size: 1.5em;
+      }
+      
+      .actions {
+        flex-direction: column;
+      }
+      
+      .action-btn {
+        width: 100%;
+        text-align: center;
+      }
+      
+      .keys-section {
+        border-radius: 12px;
+      }
+      
+      .keys-header {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .search-input {
+        width: 100%;
+      }
+      
+      .keys-table {
+        display: block;
+        overflow-x: auto;
+      }
+      
+      .keys-table th,
+      .keys-table td {
+        padding: 12px 10px;
+        font-size: 0.8em;
+        white-space: nowrap;
+      }
+      
+      .key-value {
+        font-size: 0.75em;
+      }
+      
+      .modal-content {
+        padding: 20px;
+        margin: 10px;
+      }
+      
+      .toast {
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .stats {
+        grid-template-columns: 1fr;
+      }
+      
+      .header h1 img {
+        width: 28px;
+        height: 28px;
+      }
+    }
   </style>
 </head>
 <body>

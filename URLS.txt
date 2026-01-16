@@ -1,0 +1,11 @@
+Snoe Key System URLs
+=====================
+
+Get Key Page (for users):
+https://web-production-82d0e.up.railway.app/getkey
+
+Admin Dashboard:
+https://web-production-82d0e.up.railway.app/admin
+
+Admin API Key:
+580576e30c9c5f7ec9577170594b9b7d5947631720bc9a71da1ed1b54d4dfc45
