@@ -71,20 +71,43 @@ router.post('/verify', (req, res) => {
  * Lootlabs postback - called when user completes ad
  */
 router.get('/postback/lootlabs', (req, res) => {
-    const { click_id, uid } = req.query;
-    // uid is our session token
-    const token = (uid || click_id);
+    console.log('[Lootlabs Postback] Received:', req.query);
+    const { click_id, uid, unique_id } = req.query;
+    // Try all possible token sources
+    const token = (uid || unique_id || click_id);
+    console.log('[Lootlabs Postback] Token:', token);
+    console.log('[Lootlabs Postback] All sessions:', Array.from(pendingCheckpoints.keys()));
     if (!token) {
-        res.status(400).send('Missing token');
+        console.log('[Lootlabs Postback] No token found');
+        res.status(200).send('OK');
         return;
     }
     const checkpoint = pendingCheckpoints.get(token);
     if (checkpoint) {
         checkpoint.completedProviders.add('lootlabs');
-        console.log(`[Lootlabs Postback] Verified completion for token: ${token}`);
+        console.log(`[Lootlabs Postback] ✓ Verified completion for token: ${token}`);
+    }
+    else {
+        console.log(`[Lootlabs Postback] ✗ No checkpoint found for token: ${token}`);
     }
     // Always return OK to Lootlabs
     res.status(200).send('OK');
+});
+/**
+ * GET /api/checkpoint/complete/lootlabs
+ * Alternative: User redirected back after completing - verify via URL param
+ */
+router.get('/complete/lootlabs', (req, res) => {
+    const { uid } = req.query;
+    if (uid && typeof uid === 'string') {
+        const checkpoint = pendingCheckpoints.get(uid);
+        if (checkpoint) {
+            checkpoint.completedProviders.add('lootlabs');
+            console.log(`[Lootlabs Complete] Verified via redirect for token: ${uid}`);
+        }
+    }
+    // Redirect back to getkey page
+    res.redirect('/getkey');
 });
 /**
  * GET /api/checkpoint/status/:token
