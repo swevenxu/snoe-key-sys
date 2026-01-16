@@ -5,8 +5,8 @@ const CONFIG = {
   lootlabs: 'https://loot-link.com/s?V6BuGpvN',
   workink: 'https://work.ink/2cCC/snoe-keys',
   
-  // API base URL (empty = same domain)
-  apiUrl: '',
+  // API base URL
+  apiUrl: window.location.origin,
   
   // Required checkpoints (match with server config)
   requiredCheckpoints: 1,
