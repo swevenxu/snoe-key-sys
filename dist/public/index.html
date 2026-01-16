@@ -375,19 +375,60 @@
         return;
       }
       
-      // Open ad link in new tab
-      const adUrl = CONFIG[provider];
+      // Open ad link in new tab with session token
+      let adUrl = CONFIG[provider];
       if (adUrl && !adUrl.includes('YOUR_')) {
+        // Append session token for postback verification
+        const separator = adUrl.includes('?') ? '&' : '?';
+        adUrl = `${adUrl}${separator}uid=${sessionToken}`;
         window.open(adUrl, '_blank');
+        
+        // Start polling to check if postback was received
+        showStatus('Complete the checkpoint, then come back here...', 'success');
+        pollForCompletion(provider);
       } else {
         // Demo mode - simulate completion
         console.log('Demo mode: Simulating', provider, 'completion');
+        setTimeout(() => {
+          verifyCheckpoint(provider);
+        }, 3000);
       }
+    }
+    
+    // Poll server to check if postback was received
+    function pollForCompletion(provider) {
+      let attempts = 0;
+      const maxAttempts = 60; // 5 minutes max
       
-      // Show verification prompt after delay
-      setTimeout(() => {
-        verifyCheckpoint(provider);
-      }, 3000);
+      const interval = setInterval(async () => {
+        attempts++;
+        
+        try {
+          const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/status/${sessionToken}`);
+          const data = await response.json();
+          
+          if (data.completedProviders && data.completedProviders.includes(provider.toLowerCase())) {
+            clearInterval(interval);
+            completedProviders = new Set(data.completedProviders);
+            updateUI();
+            showStatus(`${provider} checkpoint completed!`, 'success');
+            
+            const btn = document.querySelector(`.checkpoint-btn.${provider}`);
+            if (btn) {
+              btn.classList.add('done');
+              btn.innerHTML = '✓ Completed';
+              btn.disabled = true;
+            }
+          }
+        } catch (error) {
+          console.error('Poll error:', error);
+        }
+        
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          showStatus('Timeout - please try again', 'error');
+        }
+      }, 5000); // Check every 5 seconds
     }
     
     // Verify checkpoint completion

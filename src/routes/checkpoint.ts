@@ -88,6 +88,32 @@ router.post('/verify', (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/checkpoint/postback/lootlabs
+ * Lootlabs postback - called when user completes ad
+ */
+router.get('/postback/lootlabs', (req: Request, res: Response) => {
+  const { click_id, uid } = req.query;
+  
+  // uid is our session token
+  const token = (uid || click_id) as string;
+  
+  if (!token) {
+    res.status(400).send('Missing token');
+    return;
+  }
+  
+  const checkpoint = pendingCheckpoints.get(token);
+  
+  if (checkpoint) {
+    checkpoint.completedProviders.add('lootlabs');
+    console.log(`[Lootlabs Postback] Verified completion for token: ${token}`);
+  }
+  
+  // Always return OK to Lootlabs
+  res.status(200).send('OK');
+});
+
+/**
  * GET /api/checkpoint/status/:token
  * Check the status of a checkpoint session
  */
