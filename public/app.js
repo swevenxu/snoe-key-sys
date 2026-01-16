@@ -3,7 +3,7 @@ const CONFIG = {
   // Replace with your actual ad links
   linkvertise: 'https://linkvertise.com/YOUR_ID/your-link',
   lootlabs: 'https://loot-link.com/s?V6BuGpvN',
-  workink: 'https://work.ink/YOUR_LINK',
+  workink: 'https://work.ink/2cCC/snoe-keys',
   
   // API base URL (empty = same domain)
   apiUrl: '',
