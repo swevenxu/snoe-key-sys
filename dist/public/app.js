@@ -138,7 +138,7 @@ function pollForCompletion(provider) {
         const btn = document.querySelector(`.checkpoint-btn.${provider}`);
         if (btn) {
           btn.classList.add('done');
-          btn.innerHTML = '✓ Completed';
+          btn.innerHTML = 'Completed';
           btn.disabled = true;
         }
       }
@@ -194,7 +194,7 @@ async function verifyCheckpoint(provider) {
       const btn = document.querySelector(`.checkpoint-btn.${provider}`);
       if (btn) {
         btn.classList.add('done');
-        btn.innerHTML = '✓ Completed';
+        btn.innerHTML = 'Completed';
         btn.disabled = true;
       }
     }
@@ -301,7 +301,7 @@ function checkPendingCheckpoint() {
         const btn = document.querySelector(`.checkpoint-btn.${data.provider}`);
         if (btn) {
           btn.classList.add('done');
-          btn.innerHTML = '✓ Completed';
+          btn.innerHTML = 'Completed';
           btn.disabled = true;
         }
         
