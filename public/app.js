@@ -68,9 +68,12 @@ function startCheckpoint(provider) {
   console.log('adUrl:', adUrl);
   
   if (adUrl && !adUrl.includes('YOUR_')) {
-    // Append session token for postback verification
-    const separator = adUrl.includes('?') ? '&' : '?';
-    adUrl = `${adUrl}${separator}uid=${sessionToken}`;
+    // Store session token in localStorage so we can verify on return
+    localStorage.setItem('pending_checkpoint', JSON.stringify({
+      provider: provider,
+      token: sessionToken,
+      timestamp: Date.now()
+    }));
     console.log('Final URL:', adUrl);
     
     // Use location.href as fallback if popup blocked
@@ -259,5 +262,35 @@ function showStatus(message, type) {
   }, 5000);
 }
 
+// Check for pending checkpoint on page load (user returned from ad)
+function checkPendingCheckpoint() {
+  const pending = localStorage.getItem('pending_checkpoint');
+  if (pending) {
+    try {
+      const data = JSON.parse(pending);
+      // Check if it's recent (within 10 minutes)
+      if (Date.now() - data.timestamp < 10 * 60 * 1000) {
+        console.log('Found pending checkpoint:', data);
+        // Wait for session to be ready, then verify
+        const checkSession = setInterval(() => {
+          if (sessionToken) {
+            clearInterval(checkSession);
+            // If same session, mark as complete
+            if (sessionToken === data.token) {
+              verifyCheckpoint(data.provider);
+            }
+            localStorage.removeItem('pending_checkpoint');
+          }
+        }, 500);
+      } else {
+        localStorage.removeItem('pending_checkpoint');
+      }
+    } catch (e) {
+      localStorage.removeItem('pending_checkpoint');
+    }
+  }
+}
+
 // Initialize on load
 initSession();
+checkPendingCheckpoint();
