@@ -90,6 +90,23 @@ async function loadKeys() {
   }
 }
 
+// Format time remaining
+function formatTimeRemaining(expiresAt) {
+  const now = new Date();
+  const expires = new Date(expiresAt);
+  const diff = expires - now;
+  
+  if (diff <= 0) return 'Expired';
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
 // Render keys table
 function renderKeys(keys) {
   const tbody = document.getElementById('keysTableBody');
@@ -102,8 +119,8 @@ function renderKeys(keys) {
   tbody.innerHTML = keys.map(key => {
     const status = getKeyStatus(key);
     const expiresText = key.expires_at 
-      ? new Date(key.expires_at).toLocaleDateString() 
-      : 'Never';
+      ? formatTimeRemaining(key.expires_at)
+      : (key.duration_days ? `${key.duration_days}d (on first use)` : 'Never');
     const usesText = key.max_uses 
       ? `${key.current_uses}/${key.max_uses}` 
       : key.current_uses || '0';
