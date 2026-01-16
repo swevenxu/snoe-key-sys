@@ -129,9 +129,16 @@ function renderKeys(keys) {
   
   tbody.innerHTML = keys.map(key => {
     const status = getKeyStatus(key);
-    const expiresText = key.expires_at 
-      ? formatTimeRemaining(key.expires_at)
-      : (key.duration_days ? `${key.duration_days}d (on first use)` : 'Never');
+    let expiresText;
+    if (key.expires_at) {
+      expiresText = formatTimeRemaining(key.expires_at);
+    } else if (key.duration_days) {
+      // Not activated yet - show static duration
+      const hours = key.duration_days * 24;
+      expiresText = `${hours.toString().padStart(2, '0')}:00:00`;
+    } else {
+      expiresText = 'Never';
+    }
     const usesText = key.max_uses 
       ? `${key.current_uses}/${key.max_uses}` 
       : key.current_uses || '0';
