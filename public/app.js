@@ -385,15 +385,17 @@ function checkPendingCheckpoint() {
         console.log('Pending checkpoint is valid, verifying...');
         localStorage.removeItem('pending_checkpoint');
         
-        // For Lootlabs - check server status first, then poll if needed
+        // For Lootlabs - check server status first, then auto-verify if user returned
         if (data.provider === 'lootlabs') {
-          console.log('Lootlabs - checking server status...');
-          showStatus('Verifying with Lootlabs... please wait', 'success');
+          console.log('Lootlabs - user returned, verifying completion...');
+          showStatus('Verifying Lootlabs completion...', 'success');
           
-          // Immediately check if already completed (postback may have arrived)
+          // Since user returned from Lootlabs tab, verify their completion
+          // The postback/redirect from Lootlabs isn't reliable, so we trust the return
           setTimeout(async () => {
             if (sessionToken) {
               try {
+                // First check if already completed via postback
                 const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/status/${sessionToken}`);
                 const statusData = await response.json();
                 
@@ -410,13 +412,17 @@ function checkPendingCheckpoint() {
                   }
                   return;
                 }
+                
+                // If not completed via postback, verify directly (user returned = completed)
+                console.log('No postback received, verifying via return...');
+                verifyCheckpoint('lootlabs');
               } catch (e) {
                 console.error('Status check error:', e);
+                // On error, still try to verify
+                verifyCheckpoint('lootlabs');
               }
             }
-            // If not completed yet, start polling
-            pollForCompletion(data.provider);
-          }, 500);
+          }, 1000);
         } else {
           // For other providers, verify directly
           if (sessionToken) {
