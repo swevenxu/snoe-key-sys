@@ -2,7 +2,10 @@
 const CONFIG = {
   // Replace with your actual ad links
   linkvertise: 'https://direct-link.net/2630173/UbIbGR9F9wX7',
-  lootlabs: 'https://loot-link.com/s?V6BuGpvN&data=GtehpAXHTS0lWWG%2Brwk6kzaLlmRNhEZyrd9xTqO%2BbKRZEWDS7DRGLSKtL/Hbov0Xsk/5lMt3ZsO%2B5sJdQ7AMiEATDPflV4OPsfgbngmLCrtqj3BVaDsSdXSmpAsvusw7WI/beJ/Y5ZG5Tlpar2Jmmg%3D%3D',
+  // LootLabs base URL (without anti-bypass data - we'll handle unique_id separately)
+  lootlabs: 'https://loot-link.com/s?V6BuGpvN',
+  // LootLabs anti-bypass data parameter (added after unique_id)
+  lootlabsData: 'GtehpAXHTS0lWWG%2Brwk6kzaLlmRNhEZyrd9xTqO%2BbKRZEWDS7DRGLSKtL/Hbov0Xsk/5lMt3ZsO%2B5sJdQ7AMiEATDPflV4OPsfgbngmLCrtqj3BVaDsSdXSmpAsvusw7WI/beJ/Y5ZG5Tlpar2Jmmg%3D%3D',
   workink: 'https://work.ink/2cCC/snoe-keys',
   
   // API base URL
@@ -227,10 +230,11 @@ function startCheckpoint(provider) {
       timestamp: Date.now()
     }));
     
-    // For Lootlabs, append session token so postback can identify user
+    // For Lootlabs, append session token AND anti-bypass data in correct order
     if (provider === 'lootlabs') {
-      const separator = adUrl.includes('?') ? '&' : '?';
-      adUrl = `${adUrl}${separator}unique_id=${sessionToken}`;
+      // Order: base URL + unique_id + data (anti-bypass)
+      adUrl = `${adUrl}&unique_id=${sessionToken}&data=${CONFIG.lootlabsData}`;
+      console.log('Lootlabs URL with token:', adUrl);
     }
     
     console.log('Final URL:', adUrl);
