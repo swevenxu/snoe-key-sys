@@ -2,7 +2,7 @@
 const CONFIG = {
   // Replace with your actual ad links
   linkvertise: 'https://direct-link.net/2630173/UbIbGR9F9wX7',
-  lootlabs: 'https://loot-link.com/s?V6BuGpvN',
+  lootlabs: 'https://loot-link.com/s?V6BuGpvN&data=GtehpAXHTS0lWWG%2Brwk6kzaLlmRNhEZyrd9xTqO%2BbKRZEWDS7DRGLSKtL/Hbov0Xsk/5lMt3ZsO%2B5sJdQ7AMiEATDPflV4OPsfgbngmLCrtqj3BVaDsSdXSmpAsvusw7WI/beJ/Y5ZG5Tlpar2Jmmg%3D%3D',
   workink: 'https://work.ink/2cCC/snoe-keys',
   
   // API base URL
