@@ -2,8 +2,6 @@
 const CONFIG = {
   // Replace with your actual ad links
   linkvertise: 'https://direct-link.net/2630173/UbIbGR9F9wX7',
-  // LootLabs - use basic link, postback handles verification
-  lootlabs: 'https://loot-link.com/s?V6BuGpvN',
   workink: 'https://work.ink/2cCC/snoe-keys',
   
   // API base URL
@@ -228,11 +226,6 @@ function startCheckpoint(provider) {
       timestamp: Date.now()
     }));
     
-    // For Lootlabs, append session token so postback can identify user
-    if (provider === 'lootlabs') {
-      adUrl = `${adUrl}&unique_id=${sessionToken}`;
-      console.log('Lootlabs URL with token:', adUrl);
-    }
     
     console.log('Final URL:', adUrl);
     
@@ -438,60 +431,6 @@ function showStatus(message, type) {
   }, 5000);
 }
 
-// Check for Lootlabs completion via redirect
-async function checkLootlabsCompletion() {
-  const params = new URLSearchParams(window.location.search);
-  const lootlabsCompleted = params.get('lootlabs_completed');
-  
-  if (lootlabsCompleted === 'true') {
-    console.log('Lootlabs completion detected via redirect');
-    // Clean URL
-    window.history.replaceState({}, '', window.location.pathname + (hwid !== generateVisitorId() ? `?hwid=${hwid}` : ''));
-    
-    // Clear pending checkpoint
-    localStorage.removeItem('pending_checkpoint');
-    
-    // Wait for session to be ready, then check status
-    const waitForSession = setInterval(async () => {
-      if (sessionToken) {
-        clearInterval(waitForSession);
-        console.log('Session ready, checking completion status...');
-        
-        try {
-          const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/status/${sessionToken}`);
-          const data = await response.json();
-          
-          console.log('Status after lootlabs redirect:', data);
-          
-          if (data.completedProviders && data.completedProviders.includes('lootlabs')) {
-            completedProviders = new Set(data.completedProviders);
-            updateUI();
-            showStatus('Lootlabs checkpoint completed!', 'success');
-            
-            const btn = document.querySelector('.checkpoint-btn.lootlabs');
-            if (btn) {
-              btn.classList.add('done');
-              btn.innerHTML = 'Completed';
-              btn.disabled = true;
-            }
-          } else {
-            showStatus('Lootlabs verification pending... checking again', 'success');
-            pollForCompletion('lootlabs');
-          }
-        } catch (error) {
-          console.error('Error checking status:', error);
-        }
-      }
-    }, 200);
-    
-    setTimeout(() => {
-      clearInterval(waitForSession);
-    }, 10000);
-    
-    return true;
-  }
-  return false;
-}
 
 // Check for pending checkpoint on page load (user returned from ad)
 function checkPendingCheckpoint() {
@@ -510,63 +449,24 @@ function checkPendingCheckpoint() {
         console.log('Pending checkpoint is valid, verifying...');
         localStorage.removeItem('pending_checkpoint');
         
-        // For Lootlabs - ONLY trust server-side postback (anti-bypass)
-        if (data.provider === 'lootlabs') {
-          console.log('Lootlabs - checking server for postback verification...');
-          showStatus('Verifying Lootlabs completion...', 'success');
-          
-          // Only accept completion if server received postback from LootLabs
-          // This prevents bypass by just clicking and returning
-          setTimeout(async () => {
-            if (sessionToken) {
-              try {
-                const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/status/${sessionToken}`);
-                const statusData = await response.json();
-                
-                if (statusData.completedProviders && statusData.completedProviders.includes('lootlabs')) {
-                  completedProviders = new Set(statusData.completedProviders);
-                  updateUI();
-                  showStatus('Lootlabs checkpoint completed!', 'success');
-                  
-                  const btn = document.querySelector('.checkpoint-btn.lootlabs');
-                  if (btn) {
-                    btn.classList.add('done');
-                    btn.innerHTML = 'Completed';
-                    btn.disabled = true;
-                  }
-                  return;
-                }
-                
-                // Not verified yet - start polling (postback may be delayed)
-                console.log('Waiting for LootLabs postback verification...');
-                showStatus('Waiting for verification from LootLabs... This may take a moment.', 'success');
-                pollForCompletion('lootlabs');
-              } catch (e) {
-                console.error('Status check error:', e);
-                pollForCompletion('lootlabs');
-              }
-            }
-          }, 1000);
+        // For all providers, verify directly
+        if (sessionToken) {
+          console.log('Session ready, calling verifyCheckpoint');
+          verifyCheckpoint(data.provider);
         } else {
-          // For other providers, verify directly
-          if (sessionToken) {
-            console.log('Session ready, calling verifyCheckpoint');
-            verifyCheckpoint(data.provider);
-          } else {
-            console.log('Session not ready, waiting...');
-            const waitForSession = setInterval(() => {
-              if (sessionToken) {
-                clearInterval(waitForSession);
-                console.log('Session now ready, calling verifyCheckpoint');
-                verifyCheckpoint(data.provider);
-              }
-            }, 200);
-            
-            setTimeout(() => {
+          console.log('Session not ready, waiting...');
+          const waitForSession = setInterval(() => {
+            if (sessionToken) {
               clearInterval(waitForSession);
-              console.log('Timeout waiting for session');
-            }, 5000);
-          }
+              console.log('Session now ready, calling verifyCheckpoint');
+              verifyCheckpoint(data.provider);
+            }
+          }, 200);
+          
+          setTimeout(() => {
+            clearInterval(waitForSession);
+            console.log('Timeout waiting for session');
+          }, 5000);
         }
       } else {
         console.log('Pending checkpoint expired');
@@ -624,14 +524,7 @@ async function checkLinkvertiseHash() {
 // Initialize on load
 async function init() {
   await initSession();
-  
-  // Check for Lootlabs redirect completion first (highest priority)
-  const lootlabsHandled = await checkLootlabsCompletion();
-  
-  if (!lootlabsHandled) {
-    // Only check other methods if lootlabs redirect wasn't detected
-    await checkLinkvertiseHash();
-    checkPendingCheckpoint();
-  }
+  await checkLinkvertiseHash();
+  checkPendingCheckpoint();
 }
 init();
