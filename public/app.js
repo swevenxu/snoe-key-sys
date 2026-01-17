@@ -15,6 +15,8 @@ const CONFIG = {
 let sessionToken = null;
 let completedProviders = new Set();
 let hwid = null;
+let cooldownActive = false;
+let cooldownReason = null;
 
 // Get HWID from URL params (passed from Lua script)
 const urlParams = new URLSearchParams(window.location.search);
@@ -78,6 +80,7 @@ async function initSession() {
       body: JSON.stringify({
         visitorId: generateVisitorId(),
         hwid: hwid,
+        fingerprint: generateFingerprint(),
       }),
     });
     
@@ -90,11 +93,116 @@ async function initSession() {
         timestamp: Date.now()
       }));
       console.log('Session started:', sessionToken);
+      
+      // Check eligibility (cooldown/rate limit)
+      if (data.eligibility && !data.eligibility.canClaim) {
+        cooldownActive = true;
+        cooldownReason = data.eligibility.reason;
+        showCooldownWarning(data.eligibility.reason, data.eligibility.cooldownRemaining);
+      }
     }
   } catch (error) {
     console.error('Failed to start session:', error);
     showStatus('Failed to initialize. Please refresh the page.', 'error');
   }
+}
+
+// Generate a simple browser fingerprint
+function generateFingerprint() {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.textBaseline = 'top';
+  ctx.font = '14px Arial';
+  ctx.fillText('fingerprint', 2, 2);
+  
+  const data = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+    canvas.toDataURL(),
+  ].join('|');
+  
+  // Simple hash
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    const char = data.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return 'fp_' + Math.abs(hash).toString(36);
+}
+
+// Show cooldown warning
+function showCooldownWarning(reason, cooldownMinutes) {
+  const warningHtml = `
+    <div class="cooldown-warning" id="cooldownWarning">
+      <div class="cooldown-icon">⏳</div>
+      <div class="cooldown-text">${reason}</div>
+      ${cooldownMinutes ? `<div class="cooldown-timer" id="cooldownTimer">Time remaining: ${formatCooldown(cooldownMinutes)}</div>` : ''}
+    </div>
+  `;
+  
+  // Insert warning at the top of checkpoint section
+  const checkpointSection = document.querySelector('.checkpoint-buttons');
+  if (checkpointSection) {
+    checkpointSection.insertAdjacentHTML('beforebegin', warningHtml);
+  }
+  
+  // Disable all checkpoint buttons
+  document.querySelectorAll('.checkpoint-btn').forEach(btn => {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+  });
+  
+  // Start countdown timer if cooldown is active
+  if (cooldownMinutes) {
+    startCooldownTimer(cooldownMinutes);
+  }
+}
+
+// Format cooldown time
+function formatCooldown(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0) {
+    return `${hours}h ${mins}m`;
+  }
+  return `${mins}m`;
+}
+
+// Countdown timer
+function startCooldownTimer(minutes) {
+  let remaining = minutes * 60; // convert to seconds
+  
+  const timer = setInterval(() => {
+    remaining--;
+    
+    if (remaining <= 0) {
+      clearInterval(timer);
+      // Remove warning and enable buttons
+      const warning = document.getElementById('cooldownWarning');
+      if (warning) warning.remove();
+      
+      document.querySelectorAll('.checkpoint-btn').forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+      
+      cooldownActive = false;
+      cooldownReason = null;
+      showStatus('Cooldown ended! You can now claim a key.', 'success');
+      return;
+    }
+    
+    const timerEl = document.getElementById('cooldownTimer');
+    if (timerEl) {
+      const mins = Math.floor(remaining / 60);
+      const secs = remaining % 60;
+      timerEl.textContent = `Time remaining: ${formatCooldown(mins)}${secs < 10 ? ':0' : ':'}${secs}`;
+    }
+  }, 1000);
 }
 
 // Start a checkpoint
@@ -257,6 +365,12 @@ async function claimKey() {
   const claimText = document.getElementById('claimText');
   const claimLoader = document.getElementById('claimLoader');
   
+  // Check if cooldown is active
+  if (cooldownActive) {
+    showStatus(cooldownReason || 'Please wait for cooldown to end.', 'error');
+    return;
+  }
+  
   claimBtn.disabled = true;
   claimText.textContent = 'Claiming...';
   claimLoader.style.display = 'inline-block';
@@ -281,8 +395,18 @@ async function claimKey() {
       
       claimText.textContent = 'Key Claimed!';
       showStatus('Key generated successfully!', 'success');
+      
+      // Clear session after successful claim
+      localStorage.removeItem('checkpoint_session');
+    } else if (response.status === 429) {
+      // Rate limit / cooldown error
+      cooldownActive = true;
+      cooldownReason = data.message;
+      showCooldownWarning(data.message, data.cooldownRemaining);
+      claimBtn.disabled = true;
+      claimText.textContent = 'Rate Limited';
     } else {
-      throw new Error(data.error || 'Failed to claim key');
+      throw new Error(data.error || data.message || 'Failed to claim key');
     }
   } catch (error) {
     console.error('Claim failed:', error);

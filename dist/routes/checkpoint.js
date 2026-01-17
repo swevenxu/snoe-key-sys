@@ -1,7 +1,16 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { config } from '../config/index.js';
+import { checkCanClaim, recordClaim } from '../services/antiAbuse.js';
 const router = Router();
+// Helper to get client IP
+function getClientIp(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string') {
+        return forwarded.split(',')[0].trim();
+    }
+    return req.ip || req.socket.remoteAddress || 'unknown';
+}
 // Store pending checkpoints (in production, use Redis or database)
 const pendingCheckpoints = new Map();
 // Clean up old checkpoints every 10 minutes
@@ -24,23 +33,41 @@ function generateCheckpointToken() {
  * POST /api/checkpoint/start
  * Start a new checkpoint session
  */
-router.post('/start', (req, res) => {
-    const { visitorId, hwid } = req.body;
+router.post('/start', async (req, res) => {
+    const { visitorId, hwid, fingerprint } = req.body;
     if (!visitorId) {
         res.status(400).json({ error: 'visitorId is required' });
         return;
     }
+    const ipAddress = getClientIp(req);
+    const userAgent = req.headers['user-agent'] || undefined;
+    // Check if user can claim before starting session
+    const canClaim = await checkCanClaim({
+        ipAddress,
+        fingerprint,
+        hwid,
+        visitorId,
+    });
     const token = generateCheckpointToken();
     pendingCheckpoints.set(token, {
         visitorId,
         completedProviders: new Set(),
         createdAt: new Date(),
         hwid,
+        ipAddress,
+        fingerprint,
+        userAgent,
     });
     res.json({
         success: true,
         token,
         message: 'Checkpoint session started',
+        // Include eligibility info so frontend can show warnings early
+        eligibility: {
+            canClaim: canClaim.allowed,
+            reason: canClaim.reason,
+            cooldownRemaining: canClaim.cooldownRemaining,
+        },
     });
 });
 /**
@@ -196,6 +223,25 @@ router.post('/claim', async (req, res) => {
         });
         return;
     }
+    // Get current IP (might be different from when session started)
+    const currentIp = getClientIp(req);
+    const ipAddress = checkpoint.ipAddress || currentIp;
+    // Check anti-abuse limits before allowing claim
+    const canClaim = await checkCanClaim({
+        ipAddress,
+        fingerprint: checkpoint.fingerprint,
+        hwid: checkpoint.hwid,
+        visitorId: checkpoint.visitorId,
+    });
+    if (!canClaim.allowed) {
+        console.log(`[Checkpoint] Claim blocked: IP=${ipAddress}, HWID=${checkpoint.hwid}, Reason=${canClaim.reason}`);
+        res.status(429).json({
+            error: 'Rate limit exceeded',
+            message: canClaim.reason,
+            cooldownRemaining: canClaim.cooldownRemaining,
+        });
+        return;
+    }
     // Generate a new key for the user
     const { createKey } = await import('../services/keyService.js');
     const key = await createKey({
@@ -208,8 +254,20 @@ router.post('/claim', async (req, res) => {
         const { query } = await import('../db/index.js');
         await query('UPDATE keys SET hwid = $1 WHERE id = $2', [checkpoint.hwid, key.id]);
     }
+    // Record the claim for rate limiting
+    await recordClaim({
+        ipAddress,
+        fingerprint: checkpoint.fingerprint,
+        hwid: checkpoint.hwid,
+        visitorId: checkpoint.visitorId,
+        userAgent: checkpoint.userAgent,
+        sessionToken: token,
+        keyId: key.id,
+        keyValue: key.key,
+    });
     // Remove the checkpoint session
     pendingCheckpoints.delete(token);
+    console.log(`[Checkpoint] Key claimed: IP=${ipAddress}, HWID=${checkpoint.hwid}, Key=${key.key}`);
     res.json({
         success: true,
         key: key.key,

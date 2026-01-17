@@ -23,5 +23,18 @@ export const config = {
     // Checkpoint settings
     requiredCheckpoints: parseInt(process.env.REQUIRED_CHECKPOINTS || '1', 10),
     checkpointKeyDuration: parseInt(process.env.CHECKPOINT_KEY_DURATION || '1', 10), // days
+    // Anti-abuse settings
+    antiAbuse: {
+        // Maximum keys per IP per day
+        maxKeysPerIpPerDay: parseInt(process.env.MAX_KEYS_PER_IP_PER_DAY || '3', 10),
+        // Maximum keys per fingerprint per day
+        maxKeysPerFingerprintPerDay: parseInt(process.env.MAX_KEYS_PER_FINGERPRINT_PER_DAY || '3', 10),
+        // Maximum keys per HWID per day
+        maxKeysPerHwidPerDay: parseInt(process.env.MAX_KEYS_PER_HWID_PER_DAY || '2', 10),
+        // Cooldown between key claims (in hours)
+        cooldownHours: parseInt(process.env.KEY_COOLDOWN_HOURS || '12', 10),
+        // Enable/disable anti-abuse (useful for testing)
+        enabled: process.env.ANTI_ABUSE_ENABLED !== 'false',
+    },
 };
 //# sourceMappingURL=index.js.map

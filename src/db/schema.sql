@@ -68,3 +68,32 @@ CREATE TABLE IF NOT EXISTS admin_users (
     password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Key claim tracking table (for rate limiting and cooldowns)
+CREATE TABLE IF NOT EXISTS key_claims (
+    id SERIAL PRIMARY KEY,
+    
+    -- Identification
+    ip_address VARCHAR(45) NOT NULL,           -- User's IP address
+    fingerprint VARCHAR(255),                   -- Browser/device fingerprint
+    hwid VARCHAR(255),                          -- Hardware ID from Lua script
+    visitor_id VARCHAR(255),                    -- Generated visitor ID
+    
+    -- Claim details
+    key_id INTEGER REFERENCES keys(id) ON DELETE SET NULL,
+    key_value VARCHAR(64),                      -- Store key value in case key is deleted
+    
+    -- Tracking
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    -- For detecting suspicious patterns
+    user_agent TEXT,
+    session_token VARCHAR(255)                  -- Checkpoint session token
+);
+
+-- Indexes for fast lookups
+CREATE INDEX IF NOT EXISTS idx_claims_ip ON key_claims(ip_address);
+CREATE INDEX IF NOT EXISTS idx_claims_fingerprint ON key_claims(fingerprint);
+CREATE INDEX IF NOT EXISTS idx_claims_hwid ON key_claims(hwid);
+CREATE INDEX IF NOT EXISTS idx_claims_created_at ON key_claims(created_at);
+CREATE INDEX IF NOT EXISTS idx_claims_ip_created ON key_claims(ip_address, created_at);

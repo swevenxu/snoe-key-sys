@@ -14,5 +14,12 @@ export declare const config: {
     };
     requiredCheckpoints: number;
     checkpointKeyDuration: number;
+    antiAbuse: {
+        maxKeysPerIpPerDay: number;
+        maxKeysPerFingerprintPerDay: number;
+        maxKeysPerHwidPerDay: number;
+        cooldownHours: number;
+        enabled: boolean;
+    };
 };
 //# sourceMappingURL=index.d.ts.map
