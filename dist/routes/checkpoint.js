@@ -98,15 +98,23 @@ router.get('/postback/lootlabs', (req, res) => {
  * Alternative: User redirected back after completing - verify via URL param
  */
 router.get('/complete/lootlabs', (req, res) => {
-    const { uid } = req.query;
-    if (uid && typeof uid === 'string') {
-        const checkpoint = pendingCheckpoints.get(uid);
+    const { uid, unique_id } = req.query;
+    const token = (uid || unique_id);
+    console.log('[Lootlabs Complete] Redirect received:', { uid, unique_id, token });
+    if (token) {
+        const checkpoint = pendingCheckpoints.get(token);
         if (checkpoint) {
             checkpoint.completedProviders.add('lootlabs');
-            console.log(`[Lootlabs Complete] Verified via redirect for token: ${uid}`);
+            console.log(`[Lootlabs Complete] ✓ Verified via redirect for token: ${token}`);
+            // Redirect back with completion flag so client knows it worked
+            res.redirect(`/getkey?lootlabs_completed=true`);
+            return;
+        }
+        else {
+            console.log(`[Lootlabs Complete] ✗ No checkpoint found for token: ${token}`);
         }
     }
-    // Redirect back to getkey page
+    // Redirect back to getkey page (without completion flag if verification failed)
     res.redirect('/getkey');
 });
 /**

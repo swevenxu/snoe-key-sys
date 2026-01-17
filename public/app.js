@@ -41,6 +41,29 @@ async function initSession() {
       if (Date.now() - data.timestamp < 30 * 60 * 1000) {
         sessionToken = data.token;
         console.log('Restored session:', sessionToken);
+        
+        // Fetch current status from server to sync completedProviders
+        try {
+          const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/status/${sessionToken}`);
+          const statusData = await response.json();
+          if (statusData.completedProviders) {
+            completedProviders = new Set(statusData.completedProviders);
+            console.log('Restored completed providers:', Array.from(completedProviders));
+            
+            // Update UI for any already completed checkpoints
+            completedProviders.forEach(provider => {
+              const btn = document.querySelector(`.checkpoint-btn.${provider}`);
+              if (btn) {
+                btn.classList.add('done');
+                btn.innerHTML = 'Completed';
+                btn.disabled = true;
+              }
+            });
+            updateUI();
+          }
+        } catch (e) {
+          console.log('Could not fetch session status:', e);
+        }
         return;
       }
     } catch (e) {
@@ -290,6 +313,61 @@ function showStatus(message, type) {
   }, 5000);
 }
 
+// Check for Lootlabs completion via redirect
+async function checkLootlabsCompletion() {
+  const params = new URLSearchParams(window.location.search);
+  const lootlabsCompleted = params.get('lootlabs_completed');
+  
+  if (lootlabsCompleted === 'true') {
+    console.log('Lootlabs completion detected via redirect');
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname + (hwid !== generateVisitorId() ? `?hwid=${hwid}` : ''));
+    
+    // Clear pending checkpoint
+    localStorage.removeItem('pending_checkpoint');
+    
+    // Wait for session to be ready, then check status
+    const waitForSession = setInterval(async () => {
+      if (sessionToken) {
+        clearInterval(waitForSession);
+        console.log('Session ready, checking completion status...');
+        
+        try {
+          const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/status/${sessionToken}`);
+          const data = await response.json();
+          
+          console.log('Status after lootlabs redirect:', data);
+          
+          if (data.completedProviders && data.completedProviders.includes('lootlabs')) {
+            completedProviders = new Set(data.completedProviders);
+            updateUI();
+            showStatus('Lootlabs checkpoint completed!', 'success');
+            
+            const btn = document.querySelector('.checkpoint-btn.lootlabs');
+            if (btn) {
+              btn.classList.add('done');
+              btn.innerHTML = 'Completed';
+              btn.disabled = true;
+            }
+          } else {
+            showStatus('Lootlabs verification pending... checking again', 'success');
+            pollForCompletion('lootlabs');
+          }
+        } catch (error) {
+          console.error('Error checking status:', error);
+        }
+      }
+    }, 200);
+    
+    setTimeout(() => {
+      clearInterval(waitForSession);
+    }, 10000);
+    
+    return true;
+  }
+  return false;
+}
+
 // Check for pending checkpoint on page load (user returned from ad)
 function checkPendingCheckpoint() {
   const pending = localStorage.getItem('pending_checkpoint');
@@ -307,11 +385,38 @@ function checkPendingCheckpoint() {
         console.log('Pending checkpoint is valid, verifying...');
         localStorage.removeItem('pending_checkpoint');
         
-        // For Lootlabs - rely on postback only (anti-bypass)
+        // For Lootlabs - check server status first, then poll if needed
         if (data.provider === 'lootlabs') {
-          console.log('Lootlabs - waiting for postback verification...');
+          console.log('Lootlabs - checking server status...');
           showStatus('Verifying with Lootlabs... please wait', 'success');
-          pollForCompletion(data.provider);
+          
+          // Immediately check if already completed (postback may have arrived)
+          setTimeout(async () => {
+            if (sessionToken) {
+              try {
+                const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/status/${sessionToken}`);
+                const statusData = await response.json();
+                
+                if (statusData.completedProviders && statusData.completedProviders.includes('lootlabs')) {
+                  completedProviders = new Set(statusData.completedProviders);
+                  updateUI();
+                  showStatus('Lootlabs checkpoint completed!', 'success');
+                  
+                  const btn = document.querySelector('.checkpoint-btn.lootlabs');
+                  if (btn) {
+                    btn.classList.add('done');
+                    btn.innerHTML = 'Completed';
+                    btn.disabled = true;
+                  }
+                  return;
+                }
+              } catch (e) {
+                console.error('Status check error:', e);
+              }
+            }
+            // If not completed yet, start polling
+            pollForCompletion(data.provider);
+          }, 500);
         } else {
           // For other providers, verify directly
           if (sessionToken) {
@@ -389,7 +494,14 @@ async function checkLinkvertiseHash() {
 // Initialize on load
 async function init() {
   await initSession();
-  await checkLinkvertiseHash();
-  checkPendingCheckpoint();
+  
+  // Check for Lootlabs redirect completion first (highest priority)
+  const lootlabsHandled = await checkLootlabsCompletion();
+  
+  if (!lootlabsHandled) {
+    // Only check other methods if lootlabs redirect wasn't detected
+    await checkLinkvertiseHash();
+    checkPendingCheckpoint();
+  }
 }
 init();
