@@ -509,17 +509,16 @@ function checkPendingCheckpoint() {
         console.log('Pending checkpoint is valid, verifying...');
         localStorage.removeItem('pending_checkpoint');
         
-        // For Lootlabs - check server status first, then auto-verify if user returned
+        // For Lootlabs - ONLY trust server-side postback (anti-bypass)
         if (data.provider === 'lootlabs') {
-          console.log('Lootlabs - user returned, verifying completion...');
+          console.log('Lootlabs - checking server for postback verification...');
           showStatus('Verifying Lootlabs completion...', 'success');
           
-          // Since user returned from Lootlabs tab, verify their completion
-          // The postback/redirect from Lootlabs isn't reliable, so we trust the return
+          // Only accept completion if server received postback from LootLabs
+          // This prevents bypass by just clicking and returning
           setTimeout(async () => {
             if (sessionToken) {
               try {
-                // First check if already completed via postback
                 const response = await fetch(`${CONFIG.apiUrl}/api/checkpoint/status/${sessionToken}`);
                 const statusData = await response.json();
                 
@@ -537,13 +536,13 @@ function checkPendingCheckpoint() {
                   return;
                 }
                 
-                // If not completed via postback, verify directly (user returned = completed)
-                console.log('No postback received, verifying via return...');
-                verifyCheckpoint('lootlabs');
+                // Not verified yet - start polling (postback may be delayed)
+                console.log('Waiting for LootLabs postback verification...');
+                showStatus('Waiting for verification from LootLabs... This may take a moment.', 'success');
+                pollForCompletion('lootlabs');
               } catch (e) {
                 console.error('Status check error:', e);
-                // On error, still try to verify
-                verifyCheckpoint('lootlabs');
+                pollForCompletion('lootlabs');
               }
             }
           }, 1000);

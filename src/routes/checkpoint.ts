@@ -94,12 +94,24 @@ router.post('/start', async (req: Request, res: Response) => {
 /**
  * POST /api/checkpoint/verify
  * Verify that a checkpoint was completed
+ * NOTE: LootLabs cannot be verified via this endpoint (must use postback)
  */
 router.post('/verify', (req: Request, res: Response) => {
   const { token, provider } = req.body;
   
   if (!token || !provider) {
     res.status(400).json({ error: 'token and provider are required' });
+    return;
+  }
+  
+  // Block client-side verification for providers that require server-side postback
+  const serverOnlyProviders = ['lootlabs'];
+  if (serverOnlyProviders.includes(provider.toLowerCase())) {
+    console.log(`[Verify] Blocked client verification attempt for ${provider}`);
+    res.status(403).json({ 
+      error: 'This provider requires server-side verification',
+      message: 'Please complete the checkpoint properly. Verification will happen automatically.'
+    });
     return;
   }
   
@@ -156,28 +168,30 @@ router.get('/postback/lootlabs', (req: Request, res: Response) => {
 
 /**
  * GET /api/checkpoint/complete/lootlabs
- * Alternative: User redirected back after completing - verify via URL param
+ * User redirect endpoint - just sends user back to getkey page
+ * NOTE: This does NOT mark completion - only the postback can do that (anti-bypass)
  */
 router.get('/complete/lootlabs', (req: Request, res: Response) => {
   const { uid, unique_id } = req.query;
   const token = (uid || unique_id) as string;
   
-  console.log('[Lootlabs Complete] Redirect received:', { uid, unique_id, token });
+  console.log('[Lootlabs Complete] User redirect received:', { uid, unique_id, token });
   
+  // Check if postback already verified this session
   if (token) {
     const checkpoint = pendingCheckpoints.get(token);
-    if (checkpoint) {
-      checkpoint.completedProviders.add('lootlabs');
-      console.log(`[Lootlabs Complete] ✓ Verified via redirect for token: ${token}`);
-      // Redirect back with completion flag so client knows it worked
+    if (checkpoint && checkpoint.completedProviders.has('lootlabs')) {
+      console.log(`[Lootlabs Complete] ✓ Already verified via postback for token: ${token}`);
       res.redirect(`/getkey?lootlabs_completed=true`);
       return;
     } else {
-      console.log(`[Lootlabs Complete] ✗ No checkpoint found for token: ${token}`);
+      // Postback hasn't arrived yet - redirect without completion flag
+      // The client will poll for completion
+      console.log(`[Lootlabs Complete] Postback not yet received for token: ${token}`);
     }
   }
   
-  // Redirect back to getkey page (without completion flag if verification failed)
+  // Redirect back to getkey page - client will poll for postback verification
   res.redirect('/getkey');
 });
 
