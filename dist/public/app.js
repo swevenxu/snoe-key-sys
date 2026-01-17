@@ -95,6 +95,13 @@ function startCheckpoint(provider) {
       token: sessionToken,
       timestamp: Date.now()
     }));
+    
+    // For Lootlabs, append session token so postback can identify user
+    if (provider === 'lootlabs') {
+      const separator = adUrl.includes('?') ? '&' : '?';
+      adUrl = `${adUrl}${separator}unique_id=${sessionToken}`;
+    }
+    
     console.log('Final URL:', adUrl);
     
     // Use location.href as fallback if popup blocked
@@ -300,26 +307,31 @@ function checkPendingCheckpoint() {
         console.log('Pending checkpoint is valid, verifying...');
         localStorage.removeItem('pending_checkpoint');
         
-        // Tell the server this checkpoint is complete
-        if (sessionToken) {
-          console.log('Session ready, calling verifyCheckpoint');
-          verifyCheckpoint(data.provider);
+        // For Lootlabs - rely on postback only (anti-bypass)
+        if (data.provider === 'lootlabs') {
+          console.log('Lootlabs - waiting for postback verification...');
+          showStatus('Verifying with Lootlabs... please wait', 'success');
+          pollForCompletion(data.provider);
         } else {
-          console.log('Session not ready, waiting...');
-          // Wait for session to be ready
-          const waitForSession = setInterval(() => {
-            if (sessionToken) {
+          // For other providers, verify directly
+          if (sessionToken) {
+            console.log('Session ready, calling verifyCheckpoint');
+            verifyCheckpoint(data.provider);
+          } else {
+            console.log('Session not ready, waiting...');
+            const waitForSession = setInterval(() => {
+              if (sessionToken) {
+                clearInterval(waitForSession);
+                console.log('Session now ready, calling verifyCheckpoint');
+                verifyCheckpoint(data.provider);
+              }
+            }, 200);
+            
+            setTimeout(() => {
               clearInterval(waitForSession);
-              console.log('Session now ready, calling verifyCheckpoint');
-              verifyCheckpoint(data.provider);
-            }
-          }, 200);
-          
-          // Timeout after 5 seconds
-          setTimeout(() => {
-            clearInterval(waitForSession);
-            console.log('Timeout waiting for session');
-          }, 5000);
+              console.log('Timeout waiting for session');
+            }, 5000);
+          }
         }
       } else {
         console.log('Pending checkpoint expired');
